@@ -12,7 +12,7 @@ facerec_video.o:	facerec_video.cpp
 
 run: clean facerec_video
 	python ../data/create_csv.py ../data/train > ../data/train/train.txt
-	python ../data/create_csv.py ../data/test > ../data/train/test.txt
+	python ../data/create_csv.py ../data/test > ../data/test/test.txt
 	./facerec_video haarcascade_frontalface_default.xml ../data/train/train.txt ../data/test/test.txt 0
 
 clean :	
