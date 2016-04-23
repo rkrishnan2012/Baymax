@@ -10,10 +10,10 @@ facerec_video:	facerec_video.o
 facerec_video.o:	facerec_video.cpp
 	g++ $(CPPFLAGS) -c facerec_video.cpp
 
-run: facerec_video
+run: clean facerec_video
 	python ../data/create_csv.py ../data/train > ../data/train/train.txt
 	python ../data/create_csv.py ../data/test > ../data/train/test.txt
-	./facerec_video haarcascade_frontalface_default.xml ../data/train/train.txt 0
+	./facerec_video haarcascade_frontalface_default.xml ../data/train/train.txt ../data/test/test.txt 0
 
 clean :	
-	rm *.o
+	rm -f *.o

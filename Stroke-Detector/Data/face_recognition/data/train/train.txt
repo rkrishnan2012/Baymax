@@ -68,6 +68,7 @@
 ../data/train/normal/media.jpg(4).jpg;0
 ../data/train/normal/media.jpg(6).jpg;0
 ../data/train/normal/media.jpg(9).jpg;0
+../data/train/palsy/.DS_Store;1
 ../data/train/palsy/media.jpg(16).jpg;1
 ../data/train/palsy/media.jpg(17).jpg;1
 ../data/train/palsy/media.jpg(19).jpg;1

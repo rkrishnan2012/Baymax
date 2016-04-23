@@ -25,6 +25,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+ #include <algorithm>
 
 using namespace cv;
 using namespace cv::face;
@@ -33,11 +34,16 @@ using namespace std;
 static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
     std::ifstream file(filename.c_str(), ifstream::in);
     if (!file) {
+        cout << filename << endl;
         string error_message = "No valid input file was given, please check the given filename.";
         CV_Error(CV_StsBadArg, error_message);
     }
     string line, path, classlabel;
     while (getline(file, line)) {
+        if (line.find(".DS_Store") != std::string::npos) {
+            cout << "Ignoring .DS_Store file." << endl;
+            continue;
+        }
         stringstream liness(line);
         getline(liness, path, separator);
         getline(liness, classlabel);
@@ -76,49 +82,78 @@ static Mat norm_0_255(InputArray _src) {
     return dst;
 }
 
+double verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vector<int> test_labels){
+    int totalCorrect = 0;
+    // Shuffle the test images
+    for (int k = 0; k < test_images.size(); k++) {
+        int r = k + rand() % (test_images.size() - k); // careful here!
+        swap(test_images[k], test_images[r]);
+        swap(test_labels[k], test_labels[r]);
+    }
+
+    for(int i = 0; i < test_images.size(); i++){
+        int prediction = model->predict(test_images.at(i));
+        cout << "Test image " << i << " predicted: " << prediction << ", actual is " << test_labels.at(i) << endl;
+        if(prediction == test_labels.at(i)){
+            totalCorrect++;
+        }
+    }
+    return (100 * totalCorrect) / test_labels.size();
+}
+
 int main(int argc, const char *argv[]) {
     // Check for valid command line arguments, print usage
     // if no arguments were given.
-    if (argc != 4) {
-        cout << "usage: " << argv[0] << " </path/to/haar_cascade> </path/to/csv.ext> </path/to/device id>" << endl;
+    if (argc != 5) {
+        cout << "usage: " << argv[0] << " </path/to/haar_cascade> </path/to/training/csv.ext> </path/to/test/csv.ext> </path/to/device id>" << endl;
         cout << "\t </path/to/haar_cascade> -- Path to the Haar Cascade for face detection." << endl;
-        cout << "\t </path/to/csv.ext> -- Path to the CSV file with the face database." << endl;
+        cout << "\t </path/to/training/csv.ext> -- Path to the CSV file with the training face database." << endl;
+        cout << "\t </path/to/test/csv.ext> -- Path to the CSV file with the test face database." << endl;
         cout << "\t <device id> -- The webcam device id to grab frames from." << endl;
         exit(1);
     }
     // Get the path to your CSV:
     string fn_haar = string(argv[1]);
-    string fn_csv = string(argv[2]);
-    int deviceId = atoi(argv[3]);
+    string fn_training = string(argv[2]);
+    string fn_test = string(argv[3]);
+    int deviceId = atoi(argv[4]);
     // These vectors hold the images and corresponding labels:
-    vector<Mat> images;
-    vector<int> labels;
+    vector<Mat> training_images;
+    vector<int> training_labels;
+
+    vector<Mat> test_images;
+    vector<int> test_labels;
 
     // Read in the data (fails if no valid input filename is given, but you'll get an error message):
     try {
-        read_csv(fn_csv, images, labels);
+        read_csv(fn_training, training_images, training_labels);
+        read_csv(fn_test, test_images, test_labels);
     } catch (cv::Exception& e) {
-        cerr << "Error opening file \"" << fn_csv << "\". Reason: " << e.msg << endl;
+        cerr << "Error opening csv file . Reason: " << e.msg << endl;
         // nothing more we can do
         exit(1);
     }
 
     // Get the height from the first image. We'll need this
-    // later in code to reshape the images to their original
+    // later in code to reshape the training_images to their original
     // size AND we need to reshape incoming faces to this size:
-    int im_width = images[0].cols;
-    int im_height = images[0].rows;
-    // Create a FaceRecognizer and train it on the given images:
+    int im_width = training_images[0].cols;
+    int im_height = training_images[0].rows;
+    // Create a FaceRecognizer and train it on the given training_images:
     Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
     cout << "Beginning training. " << endl;
     // ifstream f("fisher.yml");
     // if(f.good()){
     //   model->load("fisher.yml");
     // } else {
-    model->train(images, labels);
+    model->train(training_images, training_labels);
     model->save("fisher.yml");
     // }
     cout << "Done training. " << endl;
+
+    cout << "Accuracy of model is: " << verifyAccuracy(model, test_images, test_labels) <<
+        "%" << endl;
+
     // Here is how to get the eigenvalues of this Eigenfaces model:
     Mat eigenvalues = model->getEigenValues();
     // And we can do the same to display the Eigenvectors (read Eigenfaces):
@@ -189,8 +224,6 @@ int main(int argc, const char *argv[]) {
             cv::resize(face, face_resized, Size(im_width, im_height));
             // Now perform the prediction, see how easy that is:
             cout << face_resized.size().width << "," << face_resized.size().height << endl;
-            imshow("face resized", face_resized);
-            waitKey();
             int prediction = model->predict(face_resized);
             // And finally write all we've found out to the original image!
             // First of all draw a green rectangle around the detected face:
