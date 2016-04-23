@@ -1,3 +1,4 @@
+../data/train/normal/.DS_Store;0
 ../data/train/normal/1_media.jpg(41).jpg;0
 ../data/train/normal/1_media.jpg(42).jpg;0
 ../data/train/normal/1_media.jpg(43).jpg;0

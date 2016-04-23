@@ -34,7 +34,6 @@ using namespace std;
 static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
     std::ifstream file(filename.c_str(), ifstream::in);
     if (!file) {
-        cout << filename << endl;
         string error_message = "No valid input file was given, please check the given filename.";
         CV_Error(CV_StsBadArg, error_message);
     }
@@ -48,16 +47,31 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
         getline(liness, path, separator);
         getline(liness, classlabel);
         if(!path.empty() && !classlabel.empty()) {
+            cout << path << endl;
             Mat image, image_resized;
+            //  Read the image
             image = imread(path, 1);
             if (image.empty()) {
                  cerr << path << " could not be read!" << endl;
                  return;
             }
-            cout << path << ", " << image.size().width << "," <<image.size().height << endl;
             Mat gray;
+            //  Grayscale
             cvtColor(image, gray, CV_BGR2GRAY);
-            cv::resize(gray, image_resized, Size(200, 200));
+            //  Apply gaussian blur
+            GaussianBlur(gray, gray, Size(5,5), 0, 0, BORDER_DEFAULT);
+            /// Sobel edge detection
+            Mat edges, grad_x, grad_y;
+            Mat abs_grad_x, abs_grad_y;
+            int scale = 1;
+            int delta = 0;
+            int ddepth = CV_16S;
+            Sobel( gray, grad_x, ddepth, 1, 0, 3, scale, delta, BORDER_DEFAULT );
+            convertScaleAbs( grad_x, abs_grad_x );
+            Sobel( gray, grad_y, ddepth, 0, 1, 3, scale, delta, BORDER_DEFAULT );
+            convertScaleAbs( grad_y, abs_grad_y );
+            addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, edges );
+            cv::resize(edges, image_resized, Size(200, 200));
             images.push_back(image_resized);
             labels.push_back(atoi(classlabel.c_str()));
         }
@@ -82,8 +96,12 @@ static Mat norm_0_255(InputArray _src) {
     return dst;
 }
 
-double verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vector<int> test_labels){
-    int totalCorrect = 0;
+void verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vector<int> test_labels){
+    double truePositive = 0;  // Correctly found 1
+    double trueNegative = 0;  // Correctly found 0
+    double falsePositive = 0; // Predicted 1 but actual 0
+    double falseNegative = 0; // Predicted 0 but actual 1
+
     // Shuffle the test images
     for (int k = 0; k < test_images.size(); k++) {
         int r = k + rand() % (test_images.size() - k); // careful here!
@@ -92,13 +110,41 @@ double verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vecto
     }
 
     for(int i = 0; i < test_images.size(); i++){
+        int actual = test_labels.at(i);
         int prediction = model->predict(test_images.at(i));
-        cout << "Test image " << i << " predicted: " << prediction << ", actual is " << test_labels.at(i) << endl;
-        if(prediction == test_labels.at(i)){
-            totalCorrect++;
+        if(prediction == actual && prediction == 1){
+            truePositive++;
+        } else if(prediction == actual && prediction == 0){
+            trueNegative++;
+        } else {
+            if(prediction == 1 && actual == 0){
+                falsePositive++;
+            } else if(prediction == 0 && actual == 1){
+                falseNegative++;
+            }
         }
     }
-    return (100 * totalCorrect) / test_labels.size();
+
+    cout << "True pos:" << truePositive << endl;
+    cout << "True neg:" << trueNegative << endl;
+    cout << "False pos:" << falsePositive << endl;
+    cout << "False neg:" << falseNegative << endl;
+    
+    double accuracy = (100 * (truePositive + trueNegative)) / test_labels.size();
+    double TPR = (100 * (truePositive / (truePositive + falseNegative))); // Recall
+    double FNR = (100 * (falseNegative / (truePositive + falseNegative)));
+    double FPR = (100 * (falsePositive / (falsePositive + trueNegative)));
+    double TNR = (100 * (trueNegative / (falsePositive + trueNegative)));
+    double PPV = (100 * (truePositive / (truePositive + falsePositive))); // Precision
+    double FDR = (100 * (falsePositive / (truePositive + falsePositive)));
+    double FOR = (100 * (falseNegative / (falseNegative + trueNegative)));
+    double NPV = (100 * (trueNegative / (falseNegative + trueNegative)));
+    double f1Score = (2 * (PPV * TPR)) / (PPV + TPR);
+    cout << "Accuracy of model is: " << accuracy <<
+        "%" << endl;
+
+    cout << "F1-Score of model is: " << f1Score <<
+    "%" << endl;
 }
 
 int main(int argc, const char *argv[]) {
@@ -151,9 +197,8 @@ int main(int argc, const char *argv[]) {
     // }
     cout << "Done training. " << endl;
 
-    cout << "Accuracy of model is: " << verifyAccuracy(model, test_images, test_labels) <<
-        "%" << endl;
-
+    verifyAccuracy(model, test_images, test_labels);
+    
     // Here is how to get the eigenvalues of this Eigenfaces model:
     Mat eigenvalues = model->getEigenValues();
     // And we can do the same to display the Eigenvectors (read Eigenfaces):
@@ -202,6 +247,7 @@ int main(int argc, const char *argv[]) {
         // Find the faces in the frame:
         vector< Rect_<int> > faces;
         haar_cascade.detectMultiScale(original, faces);
+
         // At this point you have the position of the faces in
         // faces. Now we'll get the faces, make a prediction and
         // annotate it in the video. Cool or what?
@@ -223,7 +269,6 @@ int main(int argc, const char *argv[]) {
             Mat face_resized;
             cv::resize(face, face_resized, Size(im_width, im_height));
             // Now perform the prediction, see how easy that is:
-            cout << face_resized.size().width << "," << face_resized.size().height << endl;
             int prediction = model->predict(face_resized);
             // And finally write all we've found out to the original image!
             // First of all draw a green rectangle around the detected face:
