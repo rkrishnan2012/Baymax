@@ -34,8 +34,8 @@
         style="?android:attr/buttonStyleSmall"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Calibrate"
-        android:id="@+id/calibrate"
+        android:text="Reset"
+        android:id="@+id/reset"
         android:layout_below="@+id/txtStatus"
         android:layout_toLeftOf="@+id/txtTitle"
         android:layout_toStartOf="@+id/txtTitle" />
@@ -46,7 +46,7 @@
         android:layout_height="wrap_content"
         android:text="Flap"
         android:id="@+id/flap"
-        android:layout_alignTop="@+id/calibrate"
+        android:layout_alignTop="@+id/reset"
         android:layout_centerHorizontal="true" />
 
     <Button

@@ -93,6 +93,7 @@ int main(int argc, const char *argv[]) {
     // These vectors hold the images and corresponding labels:
     vector<Mat> images;
     vector<int> labels;
+
     // Read in the data (fails if no valid input filename is given, but you'll get an error message):
     try {
         read_csv(fn_csv, images, labels);
@@ -101,6 +102,7 @@ int main(int argc, const char *argv[]) {
         // nothing more we can do
         exit(1);
     }
+
     // Get the height from the first image. We'll need this
     // later in code to reshape the images to their original
     // size AND we need to reshape incoming faces to this size:
