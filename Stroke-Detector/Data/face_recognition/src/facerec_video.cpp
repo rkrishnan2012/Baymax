@@ -1,21 +1,3 @@
-/*
- * Copyright (c) 2011. Philipp Wagner <bytefish[at]gmx[dot]de>.
- * Released to public domain under terms of the BSD Simplified license.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of the organization nor the names of its contributors
- *     may be used to endorse or promote products derived from this software
- *     without specific prior written permission.
- *
- *   See <http://www.opensource.org/licenses/bsd-license>
- */
-
 #include "opencv2/core.hpp"
 #include "opencv2/face.hpp"
 #include "opencv2/highgui.hpp"
@@ -31,6 +13,52 @@ using namespace cv;
 using namespace cv::face;
 using namespace std;
 
+ // This will be automatically changed using gradient descent.
+double PARAM_GAUSS_X = 17; // 17
+double PARAM_GAUSS_Y = 17; // 17
+double PARAM_SOBEL_SCALE = 3;
+double PARAM_SOBEL_DELTA = 3;
+double PARAM_WIDTH = 200;
+double PARAM_HEIGHT= 200;
+
+Mat preProcessImage(Mat orig, CascadeClassifier mouthClassifier){
+    Mat image=orig.clone(); 
+    //  Find the mouth
+    vector< Rect_<int> > mouths;
+    mouthClassifier.detectMultiScale(image, mouths);
+    if(mouths.size() == 0){
+        //cerr << "There isn't a mouth in a picture." << endl;
+        //imshow("full", image);
+        //waitKey();
+    }
+    // Rect mouthRect = mouths[0];
+    //  Crop the pic to the mouth
+    cv::Rect myROI(0, image.size().height / 2, image.size().width, image.size().height  / 2);
+    image = image(myROI);
+    //  Resize it to 200x200
+    cv::resize(image, image, Size(PARAM_WIDTH, PARAM_HEIGHT));
+    //  Grayscale
+    cvtColor(image, image, CV_BGR2GRAY);
+    //  Apply gaussian blur
+    GaussianBlur(image, image, Size(PARAM_GAUSS_X,PARAM_GAUSS_Y), 0, 0, BORDER_DEFAULT);    
+    /// Apply Histogram Equalization
+    equalizeHist(image, image);
+    /// Sobel edge detection
+    Mat edges, grad_x, grad_y;
+    Mat abs_grad_x, abs_grad_y;
+    int scale = PARAM_SOBEL_SCALE;
+    int delta = PARAM_SOBEL_DELTA;
+    int ddepth = CV_16S;
+    Sobel( image, grad_x, ddepth, 1, 0, 3, scale, delta, BORDER_DEFAULT );
+    convertScaleAbs( grad_x, abs_grad_x );
+    Sobel( image, grad_y, ddepth, 0, 1, 3, scale, delta, BORDER_DEFAULT );
+    convertScaleAbs( grad_y, abs_grad_y );
+    //addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, image );
+    //  Resize to 200x200 size
+    cv::resize(image, image, Size(PARAM_WIDTH, PARAM_HEIGHT));
+    return image;
+}
+
 static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
     std::ifstream file(filename.c_str(), ifstream::in);
     if (!file) {
@@ -40,39 +68,21 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
     string line, path, classlabel;
     while (getline(file, line)) {
         if (line.find(".DS_Store") != std::string::npos) {
-            cout << "Ignoring .DS_Store file." << endl;
+            //  Ignore ds_store files, lol.
             continue;
         }
         stringstream liness(line);
         getline(liness, path, separator);
         getline(liness, classlabel);
         if(!path.empty() && !classlabel.empty()) {
-            cout << path << endl;
-            Mat image, image_resized;
+            Mat image;
             //  Read the image
             image = imread(path, 1);
             if (image.empty()) {
                  cerr << path << " could not be read!" << endl;
                  return;
             }
-            Mat gray;
-            //  Grayscale
-            cvtColor(image, gray, CV_BGR2GRAY);
-            //  Apply gaussian blur
-            GaussianBlur(gray, gray, Size(5,5), 0, 0, BORDER_DEFAULT);
-            /// Sobel edge detection
-            Mat edges, grad_x, grad_y;
-            Mat abs_grad_x, abs_grad_y;
-            int scale = 1;
-            int delta = 0;
-            int ddepth = CV_16S;
-            Sobel( gray, grad_x, ddepth, 1, 0, 3, scale, delta, BORDER_DEFAULT );
-            convertScaleAbs( grad_x, abs_grad_x );
-            Sobel( gray, grad_y, ddepth, 0, 1, 3, scale, delta, BORDER_DEFAULT );
-            convertScaleAbs( grad_y, abs_grad_y );
-            addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, edges );
-            cv::resize(edges, image_resized, Size(200, 200));
-            images.push_back(image_resized);
+            images.push_back(image);
             labels.push_back(atoi(classlabel.c_str()));
         }
     }
@@ -96,7 +106,7 @@ static Mat norm_0_255(InputArray _src) {
     return dst;
 }
 
-void verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vector<int> test_labels){
+double verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vector<int> test_labels){
     double truePositive = 0;  // Correctly found 1
     double trueNegative = 0;  // Correctly found 0
     double falsePositive = 0; // Predicted 1 but actual 0
@@ -132,40 +142,133 @@ void verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vector<
     
     double accuracy = (100 * (truePositive + trueNegative)) / test_labels.size();
     double TPR = (100 * (truePositive / (truePositive + falseNegative))); // Recall
+    if(truePositive + falseNegative == 0){
+        TPR = 0;
+    }
     double FNR = (100 * (falseNegative / (truePositive + falseNegative)));
     double FPR = (100 * (falsePositive / (falsePositive + trueNegative)));
     double TNR = (100 * (trueNegative / (falsePositive + trueNegative)));
     double PPV = (100 * (truePositive / (truePositive + falsePositive))); // Precision
+    if(truePositive + falsePositive == 0){
+        PPV = 0;
+    }
     double FDR = (100 * (falsePositive / (truePositive + falsePositive)));
     double FOR = (100 * (falseNegative / (falseNegative + trueNegative)));
     double NPV = (100 * (trueNegative / (falseNegative + trueNegative)));
     double f1Score = (2 * (PPV * TPR)) / (PPV + TPR);
-    cout << "Accuracy of model is: " << accuracy <<
-        "%" << endl;
+    if(PPV + TPR == 0){
+        f1Score = 0;
+    }
+    //cout << "Accuracy of model is: " << accuracy <<
+    //    "%" << endl;
+    return f1Score;
+}
 
-    cout << "F1-Score of model is: " << f1Score <<
-    "%" << endl;
+Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier mouthClassifier, 
+        vector<Mat> training_images, vector<int> training_labels,
+        vector<Mat> cv_images, vector<int> cv_labels){
+    //  Optimize for the PARAM_GAUSS parameter
+    /*double best_accuracy = 0;
+    int best_p_gauss = 1;
+    for(int p_gauss = 1; p_gauss < 50; p_gauss+=2){
+        Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
+        PARAM_GAUSS_X = p_gauss;
+        PARAM_GAUSS_Y = p_gauss;
+        vector<Mat> temp_processed_images;
+        vector<int> temp_processed_labels;
+        vector<Mat> temp_cv_images;
+        vector<int> temp_cv_labels;
+        for(int i = 0; i < training_images.size(); i++){
+            //  Preprocess the test image using the parameters
+            temp_processed_images.push_back(preProcessImage(training_images.at(i), mouthClassifier));
+            temp_processed_labels.push_back(training_labels.at(i));
+        }
+        for(int i = 0; i < cv_images.size(); i++){
+            //  Preprocess the cross validation image using the parameters
+            temp_cv_images.push_back(preProcessImage(cv_images.at(i), mouthClassifier));
+            temp_cv_labels.push_back(cv_labels.at(i));
+        }    
+        model->train(temp_processed_images, temp_processed_labels);
+        double accuracy = verifyAccuracy(model, temp_cv_images, temp_cv_labels);
+        if(accuracy > best_accuracy){
+            best_accuracy = accuracy;
+            best_p_gauss = p_gauss;
+            cout << "Accuracy: " << best_accuracy << endl;
+        }
+    }
+    cout << "Done optimizing. Best p_gauss value is " << best_p_gauss << endl;
+    PARAM_GAUSS_X = best_p_gauss;
+    PARAM_GAUSS_Y = best_p_gauss;
+    //  Optimize for the PARAM_SOBEL parameter
+    int best_p_sobel = 1;
+    for(int p_sobel = 1; p_sobel < 20; p_sobel+=1){
+        Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
+        PARAM_SOBEL_SCALE = p_sobel;
+        vector<Mat> temp_processed_images;
+        vector<int> temp_processed_labels;
+        vector<Mat> temp_cv_images;
+        vector<int> temp_cv_labels;
+        for(int i = 0; i < training_images.size(); i++){
+            //  Preprocess the test image using the parameters
+            temp_processed_images.push_back(preProcessImage(training_images.at(i), mouthClassifier));
+            temp_processed_labels.push_back(training_labels.at(i));
+        }
+        for(int i = 0; i < cv_images.size(); i++){
+            //  Preprocess the cross validation image using the parameters
+            temp_cv_images.push_back(preProcessImage(cv_images.at(i), mouthClassifier));
+            temp_cv_labels.push_back(cv_labels.at(i));
+        }    
+        model->train(temp_processed_images, temp_processed_labels);
+        double accuracy = verifyAccuracy(model, temp_cv_images, temp_cv_labels);
+        if(accuracy > best_accuracy){
+            best_accuracy = accuracy;
+            best_p_sobel = p_sobel;
+            cout << "Accuracy: " << best_accuracy << endl;
+        }
+    }
+    cout << "Done optimizing. Best p_sobel value is " << best_p_sobel << endl;
+    PARAM_SOBEL_SCALE = best_p_sobel;*/
+    Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
+    cout << "Pre-processing images." << endl;
+    for(int i = 0; i < training_images.size(); i++){
+        //  Preprocess the image using the parameters
+        cout << ((100 * i) / training_images.size()) << "% done. Image #" << i << endl;
+        training_images[i] = preProcessImage(training_images.at(i), mouthClassifier);
+    }    
+    cout << "Starting training." << endl;
+    model->train(training_images, training_labels);
+    model->save("fisher.yml");
+    cout << "Done training final model." << endl;
+    return model;
 }
 
 int main(int argc, const char *argv[]) {
     // Check for valid command line arguments, print usage
     // if no arguments were given.
-    if (argc != 5) {
+    if (argc != 7) {
         cout << "usage: " << argv[0] << " </path/to/haar_cascade> </path/to/training/csv.ext> </path/to/test/csv.ext> </path/to/device id>" << endl;
-        cout << "\t </path/to/haar_cascade> -- Path to the Haar Cascade for face detection." << endl;
+        cout << "\t </path/to/face_cascade> -- Path to the Haar Cascade for face detection." << endl;
+        cout << "\t </path/to/mouth_cascade> -- Path to the Haar Cascade for mouth detection." << endl;
         cout << "\t </path/to/training/csv.ext> -- Path to the CSV file with the training face database." << endl;
+        cout << "\t </path/to/cv/csv.ext> -- Path to the CSV file with the cross validation face database." << endl;
         cout << "\t </path/to/test/csv.ext> -- Path to the CSV file with the test face database." << endl;
         cout << "\t <device id> -- The webcam device id to grab frames from." << endl;
         exit(1);
     }
     // Get the path to your CSV:
-    string fn_haar = string(argv[1]);
-    string fn_training = string(argv[2]);
-    string fn_test = string(argv[3]);
-    int deviceId = atoi(argv[4]);
+    string fn_haar_face = string(argv[1]);
+    string fn_haar_mouth = string(argv[2]);
+    string fn_training = string(argv[3]);
+    string fn_cv = string(argv[4]);
+    string fn_test = string(argv[5]);
+    int deviceId = atoi(argv[6]);
+
     // These vectors hold the images and corresponding labels:
     vector<Mat> training_images;
     vector<int> training_labels;
+
+    vector<Mat> cv_images;
+    vector<int> cv_labels;
 
     vector<Mat> test_images;
     vector<int> test_labels;
@@ -173,6 +276,7 @@ int main(int argc, const char *argv[]) {
     // Read in the data (fails if no valid input filename is given, but you'll get an error message):
     try {
         read_csv(fn_training, training_images, training_labels);
+        read_csv(fn_cv, cv_images, cv_labels);
         read_csv(fn_test, test_images, test_labels);
     } catch (cv::Exception& e) {
         cerr << "Error opening csv file . Reason: " << e.msg << endl;
@@ -180,24 +284,17 @@ int main(int argc, const char *argv[]) {
         exit(1);
     }
 
-    // Get the height from the first image. We'll need this
-    // later in code to reshape the training_images to their original
-    // size AND we need to reshape incoming faces to this size:
-    int im_width = training_images[0].cols;
-    int im_height = training_images[0].rows;
-    // Create a FaceRecognizer and train it on the given training_images:
-    Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
-    cout << "Beginning training. " << endl;
-    // ifstream f("fisher.yml");
-    // if(f.good()){
-    //   model->load("fisher.yml");
-    // } else {
-    model->train(training_images, training_labels);
-    model->save("fisher.yml");
-    // }
-    cout << "Done training. " << endl;
+    CascadeClassifier mouthClassifier;
+    mouthClassifier.load(fn_haar_mouth);
 
-    verifyAccuracy(model, test_images, test_labels);
+    Ptr<BasicFaceRecognizer> model =  findBestModel(mouthClassifier, training_images, training_labels, cv_images, cv_labels);
+    for(int i = 0; i < test_images.size(); i++){
+        //  Preprocess the image using the parameters
+        test_images[i] = preProcessImage(test_images.at(i), mouthClassifier);
+    }  
+    double accuracy = verifyAccuracy(model, test_images, test_labels);
+    cout << "F1-Score of model is: " << accuracy <<
+    "%" << endl;
     
     // Here is how to get the eigenvalues of this Eigenfaces model:
     Mat eigenvalues = model->getEigenValues();
@@ -205,6 +302,14 @@ int main(int argc, const char *argv[]) {
     Mat W = model->getEigenVectors();
     // Get the sample mean from the training data
     Mat mean = model->getMean();
+
+    //
+    // Get the height from the first image. We'll need this
+    // later in code to reshape the training_images to their original
+    // size AND we need to reshape incoming faces to this size:
+    int im_width = training_images[0].cols;
+    int im_height = training_images[0].rows;
+
     // Display or save the first, at most 16 Fisherfaces:
     for (int i = 0; i < min(16, W.cols); i++) {
         string msg = format("Eigenvalue #%d = %.5f", i, eigenvalues.at<double>(i));
@@ -218,15 +323,24 @@ int main(int argc, const char *argv[]) {
         applyColorMap(grayscale, cgrayscale, COLORMAP_BONE);
         // Display or save:
         imshow(format("fisherface_%d", i), cgrayscale);
+        waitKey();
     }
-    // That's it for learning the Face Recognition model. You now
-    // need to create the classifier for the task of Face Detection.
-    // We are going to use the haar cascade you have specified in the
-    // command line arguments:
-    //
+
+    // Display or save the image reconstruction at some predefined steps:
+    for(int num_component = 0; num_component < min(16, W.cols); num_component++) {
+        // Slice the Fisherface from the model:
+        Mat ev = W.col(num_component);
+        Mat projection = cv::LDA::subspaceProject(ev, mean, training_images[0].reshape(1,1));
+        Mat reconstruction = cv::LDA::subspaceReconstruct(ev, mean, projection);
+        // Normalize the result:
+        reconstruction = norm_0_255(reconstruction.reshape(1, training_images[0].rows));
+        imshow(format("fisherface_reconstruction_%d", num_component), reconstruction);
+        waitKey();
+    }
+
     CascadeClassifier haar_cascade;
-    haar_cascade.load(fn_haar);
-    // Get a handle to the Video device:
+    haar_cascade.load(fn_haar_face);
+    /*// Get a handle to the Video device:
     VideoCapture cap(deviceId);
     // Check if we can use this device at all:
     if(!cap.isOpened()) {
@@ -289,6 +403,6 @@ int main(int argc, const char *argv[]) {
         // Exit this loop on escape:
         if(key == 27)
             break;
-    }
+    }*/
     return 0;
 }
