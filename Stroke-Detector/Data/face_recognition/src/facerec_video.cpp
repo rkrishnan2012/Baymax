@@ -21,7 +21,7 @@ double PARAM_SOBEL_DELTA = 3;
 double PARAM_WIDTH = 50;
 double PARAM_HEIGHT= 50;
 
-Mat preProcessImage(Mat orig, CascadeClassifier mouthClassifier){
+Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifier mouthClassifier){
     Mat image=orig.clone(); 
     //  Find the mouth
     vector< Rect_<int> > mouths;
@@ -63,7 +63,7 @@ Mat preProcessImage(Mat orig, CascadeClassifier mouthClassifier){
     image.convertTo(viz,CV_8U,1.0/255.0);     // move to proper[0..255] range to show it
     imshow("k",kernel);
     imshow("d",viz);
-      waitKey();
+      //waitKey();
     //  Resize to 200x200 size
     cv::resize(image, image, Size(PARAM_WIDTH, PARAM_HEIGHT));
     return image;
@@ -195,7 +195,8 @@ double verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vecto
     return f1Score;
 }
 
-Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier mouthClassifier, 
+Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier, 
+        CascadeClassifier mouthClassifier, 
         vector<Mat> training_images, vector<int> training_labels,
         vector<Mat> cv_images, vector<int> cv_labels){
     //  Optimize for the PARAM_GAUSS parameter
@@ -264,7 +265,7 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier mouthClassifier,
     for(int i = 0; i < training_images.size(); i++){
         //  Preprocess the image using the parameters
         cout << ((100 * i) / training_images.size()) << "% done. Image #" << i << endl;
-        training_images[i] = preProcessImage(training_images.at(i), mouthClassifier);
+        training_images[i] = preProcessImage(training_images.at(i), faceClassifier, mouthClassifier);
     }    
     cout << "Starting training." << endl;
     model->train(training_images, training_labels);
@@ -318,10 +319,13 @@ int main(int argc, const char *argv[]) {
     CascadeClassifier mouthClassifier;
     mouthClassifier.load(fn_haar_mouth);
 
-    Ptr<BasicFaceRecognizer> model =  findBestModel(mouthClassifier, training_images, training_labels, cv_images, cv_labels);
+    CascadeClassifier haar_cascade;
+    haar_cascade.load(fn_haar_face);
+
+    Ptr<BasicFaceRecognizer> model =  findBestModel(haar_cascade, mouthClassifier, training_images, training_labels, cv_images, cv_labels);
     for(int i = 0; i < test_images.size(); i++){
         //  Preprocess the image using the parameters
-        test_images[i] = preProcessImage(test_images.at(i), mouthClassifier);
+        test_images[i] = preProcessImage(test_images.at(i), haar_cascade, mouthClassifier);
     }  
     double accuracy = verifyAccuracy(model, test_images, test_labels);
     cout << "F1-Score of model is: " << accuracy <<
@@ -356,8 +360,7 @@ int main(int argc, const char *argv[]) {
         waitKey();
     }*/
 
-    CascadeClassifier haar_cascade;
-    haar_cascade.load(fn_haar_face);
+    
     /*// Get a handle to the Video device:
     VideoCapture cap(deviceId);
     // Check if we can use this device at all:
