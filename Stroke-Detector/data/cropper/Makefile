@@ -14,7 +14,7 @@ run: clean ImageCropper
 	rm -rf filtered-images/
 	mkdir -p filtered-images/palsy
 	mkdir -p filtered-images/regular
-	./ImageCropper ../original-images/palsy ../original-images/regular ../classifiers/haarcascade_frontalface_default.xml ../classifiers/nose.xml ../classifiers/rightEye.xml
+	./ImageCropper ../original-images/palsy ../original-images/regular ../classifiers/face.xml ../classifiers/nose.xml ../classifiers/rightEye.xml
 	./fileMover.sh
 	rm -rf filtered-images
 	rm -rf sorted/cv
