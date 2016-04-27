@@ -16,10 +16,10 @@ run: clean ImageCropper
 	mkdir -p filtered-images/regular
 	./ImageCropper ../original-images/palsy ../original-images/regular ../classifiers/face.xml ../classifiers/nose.xml ../classifiers/rightEye.xml
 	./fileMover.sh
+	mv sorted/* ../filtered-images/
 	rm -rf filtered-images
 	rm -rf sorted/cv
 	rm -rf sorted/test
 	rm -rf sorted/train
-	mv sorted/* ../filtered-images/
 clean :	
 	rm -f *.o
