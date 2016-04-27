@@ -34,6 +34,8 @@ using namespace cv::face;
 using namespace std;
 
 CascadeClassifier faceClassifier;
+CascadeClassifier noseClassifier;
+CascadeClassifier rightEyeClassifier;
 
 
 static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
@@ -73,16 +75,39 @@ void cropImage(char* path, char* outputPath){
         for(int i = 0; i < faces.size() && i < 2; i++) {
           Rect face_i = faces[i];
           Mat cropped;
-          // Increase the rectangle Size
-          cv::Size deltaSize(std::min((int)(face_i.width * 0.01), (int)(image.size().width - face_i.width)/2), std::min((int)(face_i.height * 0.01), (int)(image.size().height - face_i.height)/2)); // 0.1f = 10/100
-          cv::Point offset( deltaSize.width/2, deltaSize.height/2);
-          //face_i += deltaSize;
-          //face_i -= offset;
+
           cout << "ORIG:" << image.size().width << ", " << image.size().height << endl;
           cout << face_i.width << ", " << face_i.height << endl;
           cout << face_i.x << ", " << face_i.y << endl;
           // Crop the face
           cropped = image(face_i);
+
+          vector< Rect_<int> > nose;
+          noseClassifier.detectMultiScale(cropped, nose);
+          if(nose.size() != 0){
+              //  rectangle(cropped, nose[0], CV_RGB(255, 0,0), 1);              
+          }
+
+          vector< Rect_<int> > rEye;
+          rightEyeClassifier.detectMultiScale(cropped, rEye);
+          if(rEye.size() != 0){
+               // rectangle(cropped, rEye[0], CV_RGB(0, 255,0), 1);              
+          }
+
+          if(nose.size() == 0 || rEye.size() == 0){
+            return;
+          }
+
+          if(rEye[0].y + rEye[0].height < nose[0].y + nose[0].height) return;
+          
+          // Increase the rectangle Size
+          cv::Size deltaSize(face_i.width * .3, 0); // 0.1f = 10/100
+          cv::Point offset( deltaSize.width/2, deltaSize.height/2);
+          face_i -= deltaSize;
+          face_i += offset;
+          cropped = image(face_i);
+
+          
           // Resize the face to 200x200
           cv::resize(cropped, face_resized, Size(im_width, im_height));
           vector<int> compression_params;
@@ -90,7 +115,7 @@ void cropImage(char* path, char* outputPath){
           compression_params.push_back(3);
           imwrite(outputPath, face_resized, compression_params);
           cout << "Saved image to " << outputPath << endl;
-          rectangle(image, face_i, CV_RGB(0, 255,0), 1);
+          //rectangle(image, face_i, CV_RGB(0, 255,0), 1);
           // imshow("images", image);
           // waitKey();
         }
@@ -113,16 +138,24 @@ void read_files(const char* path, string type){
 int main(int argc, const char *argv[]) {
     // Check for valid command line arguments, print usage
     // if no arguments were given.
-    if (argc != 4) {
+    if (argc != 6) {
         cout << "usage: " << argv[0] << " </path/to/palsy/folder> </path/to/regular/folder> </path/to/haar_cascade>" << endl;
         cout << "\t </path/to/palsy/folder> -- Path to the Bell's palsy images directory downloaded." << endl;
         cout << "\t </path/to/regular/folder> -- Path to the Regular images directory downloaded." << endl;
         cout << "\t </path/to/haar_cascade> -- Path to HAAR facial classifier." << endl;
+        cout << "\t </path/to/haar_cascade> -- Path to HAAR leftEye classifier." << endl;
+        cout << "\t </path/to/haar_cascade> -- Path to HAAR rightEye classifier." << endl;
         exit(1);
     }
 
     string fn_haar = string(argv[3]);
     faceClassifier.load(fn_haar);
+
+    fn_haar = string(argv[4]);
+    rightEyeClassifier.load(fn_haar);
+
+    fn_haar = string(argv[5]);
+    noseClassifier.load(fn_haar);
 
     read_files(argv[1], "palsy");
     read_files(argv[2], "regular");

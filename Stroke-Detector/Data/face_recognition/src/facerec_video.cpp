@@ -58,12 +58,12 @@ Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifie
     int kernel_size = 10;
     double sig = 2, th = 0, lm = 1.0, gm = 0.02, ps = 0;
     cv::Mat kernel = cv::getGaborKernel(cv::Size(kernel_size,kernel_size), sig, th, lm, gm, ps);
-    cv::filter2D(image, image, CV_32F, kernel);
+    //cv::filter2D(image, image, CV_32F, kernel);
     Mat viz;
     image.convertTo(viz,CV_8U,1.0/255.0);     // move to proper[0..255] range to show it
     imshow("k",kernel);
-    imshow("d",viz);
-      //waitKey();
+    imshow("d",image);
+    //waitKey();
     //  Resize to 200x200 size
     cv::resize(image, image, Size(PARAM_WIDTH, PARAM_HEIGHT));
     return image;
