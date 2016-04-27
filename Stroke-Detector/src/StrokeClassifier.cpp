@@ -20,6 +20,9 @@ double PARAM_SOBEL_SCALE = 3;
 double PARAM_SOBEL_DELTA = 3;
 double PARAM_WIDTH = 50;
 double PARAM_HEIGHT= 50;
+double PARAM_GAMMA= 1; // 1.2
+double PARAM_SIGMA= 1.5; // 1.2
+double PARAM_THETA= 1.76715; // 1.2
 
 Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifier mouthClassifier){
     Mat image=orig.clone(); 
@@ -56,7 +59,7 @@ Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifie
     //addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, image );
     image.convertTo(image,CV_32F);
     int kernel_size = 10;
-    double sig = 1, th = 0, lm = 1.3, gm = 0.02, ps = 0;
+    double sig = PARAM_SIGMA, th = PARAM_THETA, lm = 1.0, gm = PARAM_GAMMA, ps = 0;
     cv::Mat kernel = cv::getGaborKernel(cv::Size(kernel_size,kernel_size), sig, th, lm, gm, ps);
     cv::filter2D(image, image, CV_32F, kernel);
     Mat viz;
@@ -162,10 +165,10 @@ double verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vecto
         }
     }
 
-    cout << "True pos:" << truePositive << endl;
-    cout << "True neg:" << trueNegative << endl;
-    cout << "False pos:" << falsePositive << endl;
-    cout << "False neg:" << falseNegative << endl;
+    cout << "   True pos:" << truePositive << endl;
+    cout << "   True neg:" << trueNegative << endl;
+    cout << "   False pos:" << falsePositive << endl;
+    cout << "   False neg:" << falseNegative << endl;
     
     double accuracy = (100 * (truePositive + trueNegative)) / test_labels.size();
     double TPR = (100 * (truePositive / (truePositive + falseNegative))); // Recall
@@ -180,8 +183,8 @@ double verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vecto
         PPV = 0;
     }
 
-    cout << "Precision:" << PPV << "%" << endl;
-    cout << "Recall:" << TPR << "%" << endl;
+    cout << "   Precision:" << PPV << "%" << endl;
+    cout << "   Recall:" << TPR << "%" << endl;
 
     double FDR = (100 * (falsePositive / (truePositive + falsePositive)));
     double FOR = (100 * (falseNegative / (falseNegative + trueNegative)));
@@ -190,7 +193,7 @@ double verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vecto
     if(PPV + TPR == 0){
         f1Score = 0;
     }
-    cout << "Accuracy of model is: " << accuracy <<
+    cout << "   Accuracy of model is: " << accuracy <<
         "%" << endl;
     return f1Score;
 }
@@ -201,6 +204,90 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
         vector<Mat> cv_images, vector<int> cv_labels){
     //  Optimize for the PARAM_GAUSS parameter
     double best_accuracy = 0;
+    float best_theta = 1;
+    for(float p_theta = 0; p_theta < M_PI - M_PI/10; p_theta+=M_PI/16){
+        Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
+        PARAM_THETA = p_theta;
+        vector<Mat> temp_processed_images;
+        vector<int> temp_processed_labels;
+        vector<Mat> temp_cv_images;
+        vector<int> temp_cv_labels;
+        for(int i = 0; i < training_images.size(); i++){
+            //  Preprocess the test image using the parameters
+            temp_processed_images.push_back(preProcessImage(training_images.at(i), faceClassifier, mouthClassifier));
+            temp_processed_labels.push_back(training_labels.at(i));
+        }
+        for(int i = 0; i < cv_images.size(); i++){
+            //  Preprocess the cross validation image using the parameters
+            temp_cv_images.push_back(preProcessImage(cv_images.at(i), faceClassifier, mouthClassifier));
+            temp_cv_labels.push_back(cv_labels.at(i));
+        }    
+        model->train(temp_processed_images, temp_processed_labels);
+        double accuracy = verifyAccuracy(model, temp_cv_images, temp_cv_labels);
+        if(accuracy > best_accuracy){
+            best_accuracy = accuracy;
+            best_theta = p_theta;
+            cout << "Accuracy: " << best_accuracy << endl;
+        }
+    }
+    cout << "Done optimizing. Best p_theta value is " << best_theta << endl;
+    PARAM_THETA = best_theta;
+   float param_sigma = 1;
+    for(float p_sigma = 0; p_sigma < 2; p_sigma+=.3){
+        Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
+        PARAM_SIGMA = p_sigma;
+        vector<Mat> temp_processed_images;
+        vector<int> temp_processed_labels;
+        vector<Mat> temp_cv_images;
+        vector<int> temp_cv_labels;
+        for(int i = 0; i < training_images.size(); i++){
+            //  Preprocess the test image using the parameters
+            temp_processed_images.push_back(preProcessImage(training_images.at(i), faceClassifier, mouthClassifier));
+            temp_processed_labels.push_back(training_labels.at(i));
+        }
+        for(int i = 0; i < cv_images.size(); i++){
+            //  Preprocess the cross validation image using the parameters
+            temp_cv_images.push_back(preProcessImage(cv_images.at(i), faceClassifier, mouthClassifier));
+            temp_cv_labels.push_back(cv_labels.at(i));
+        }    
+        model->train(temp_processed_images, temp_processed_labels);
+        double accuracy = verifyAccuracy(model, temp_cv_images, temp_cv_labels);
+        if(accuracy > best_accuracy){
+            best_accuracy = accuracy;
+            param_sigma = p_sigma;
+            cout << "Best f-score: " << best_accuracy << endl;
+        }
+    }
+    cout << "Done optimizing. Best p_sigma value is " << param_sigma << endl;
+    PARAM_SIGMA = param_sigma;
+    float best_gamma = 1;
+    for(float p_gamma = .9; p_gamma < 2; p_gamma+=.1){
+        Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
+        PARAM_GAMMA = p_gamma;
+        vector<Mat> temp_processed_images;
+        vector<int> temp_processed_labels;
+        vector<Mat> temp_cv_images;
+        vector<int> temp_cv_labels;
+        for(int i = 0; i < training_images.size(); i++){
+            //  Preprocess the test image using the parameters
+            temp_processed_images.push_back(preProcessImage(training_images.at(i), faceClassifier, mouthClassifier));
+            temp_processed_labels.push_back(training_labels.at(i));
+        }
+        for(int i = 0; i < cv_images.size(); i++){
+            //  Preprocess the cross validation image using the parameters
+            temp_cv_images.push_back(preProcessImage(cv_images.at(i), faceClassifier, mouthClassifier));
+            temp_cv_labels.push_back(cv_labels.at(i));
+        }    
+        model->train(temp_processed_images, temp_processed_labels);
+        double accuracy = verifyAccuracy(model, temp_cv_images, temp_cv_labels);
+        if(accuracy > best_accuracy){
+            best_accuracy = accuracy;
+            best_gamma = p_gamma;
+            cout << "Accuracy: " << best_accuracy << endl;
+        }
+    }
+    cout << "Done optimizing. Best p_gamma value is " << best_gamma << endl;
+    PARAM_GAMMA = best_gamma;
     /*int best_p_gauss = 1;
     for(int p_gauss = 1; p_gauss < 50; p_gauss+=2){
         Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
@@ -346,7 +433,7 @@ int main(int argc, const char *argv[]) {
     int im_height = training_images[0].rows;
 
     // Display or save the Eigenfaces:
-    /*for (int i = 0; i < min(10, W.cols); i++) {
+    for (int i = 0; i < W.cols; i++) {
         string msg = format("Eigenvalue #%d = %.10f", i, eigenvalues.at<double>(i));
         cout << msg << endl;
         // get eigenvector #i
@@ -355,11 +442,10 @@ int main(int argc, const char *argv[]) {
         Mat grayscale = norm_0_255(ev.reshape(1, test_images[0].rows));
         // Show the image & apply a Jet colormap for better sensing.
         Mat cgrayscale;
-        applyColorMap(grayscale, cgrayscale, COLORMAP_JET);
+        applyColorMap(grayscale, cgrayscale, COLORMAP_BONE);
         imshow(format("eigenface_%d", i), cgrayscale);
         waitKey();
-    }*/
-
+    }
     
     /*// Get a handle to the Video device:
     VideoCapture cap(deviceId);
