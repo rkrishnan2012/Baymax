@@ -16,6 +16,9 @@ run: clean ImageCropper
 	mkdir -p filtered-images/regular
 	./ImageCropper ../original-images/palsy ../original-images/regular ../classifiers/face.xml ../classifiers/nose.xml ../classifiers/rightEye.xml
 	./fileMover.sh
+	rm -rf ../filtered-images/cv
+	rm -rf ../filtered-images/test
+	rm -rf ../filtered-images/train
 	mv sorted/* ../filtered-images/
 	rm -rf filtered-images
 	rm -rf sorted/cv

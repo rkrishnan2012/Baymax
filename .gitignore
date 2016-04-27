@@ -2,3 +2,5 @@
 ~$condPaper.docx
 Stroke-Detector/data/cropper/filtered-images/
 Stroke-Detector/data/cropper/ImageCropper
+Stroke-Detector/src/StrokeClassifier
+Stroke-Detector/src/StrokeClassifier.o
