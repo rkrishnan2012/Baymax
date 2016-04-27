@@ -128,7 +128,7 @@ void read_files(const char* path, string type){
     while ((dp = readdir(dirp)) != NULL){
         char buffer [256], outPath[256];
         snprintf (buffer, 256, "%s/%s", path, dp->d_name);
-        snprintf (outPath, 256, "%s/%s/%s", "Filtered",
+        snprintf (outPath, 256, "%s/%s/%s", "filtered-images",
           type.c_str(), dp->d_name);
         cropImage(buffer, outPath);
     }

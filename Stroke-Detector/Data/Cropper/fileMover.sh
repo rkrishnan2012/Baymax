@@ -1,11 +1,11 @@
 # Remove spaces from files in subdirectory of images
-for f in Filtered/palsy/*; do mv "$f" "${f// /_}"; done
-for f in Filtered/regular/*; do mv "$f" "${f// /_}"; done
+for f in filtered-images/palsy/*; do mv "$f" "${f// /_}"; done
+for f in filtered-images/regular/*; do mv "$f" "${f// /_}"; done
 
-mkdir -p Sorted/palsy
-mkdir -p Sorted/regular
+mkdir -p sorted/palsy
+mkdir -p sorted/regular
 
-cd Filtered
+cd filtered-images
 find palsy -type f |
 gshuf |  # shuffle the input lines, i.e. apply a random permutation
 nl -n rz |  # add line numbers 000001, …
@@ -15,7 +15,7 @@ while read -r number name; do
     *.*) ext=.${ext##*.};;
     *) ext=;;
   esac
-  mv "$name" "../Sorted/${name%/*}/$number$ext"
+  mv "$name" "../sorted/${name%/*}/$number$ext"
 done
 
 find regular -type f |
@@ -27,59 +27,59 @@ while read -r number name; do
     *.*) ext=.${ext##*.};;
     *) ext=;;
   esac
-  mv "$name" "../Sorted/${name%/*}/$number$ext"
+  mv "$name" "../sorted/${name%/*}/$number$ext"
 done
 
 cd ..
 
 
-mkdir -p Sorted/train/palsy
-mkdir -p Sorted/train/regular
-mkdir -p Sorted/cv/palsy
-mkdir -p Sorted/cv/regular
-mkdir -p Sorted/test/palsy
-mkdir -p Sorted/test/regular
+mkdir -p sorted/train/palsy
+mkdir -p sorted/train/regular
+mkdir -p sorted/cv/palsy
+mkdir -p sorted/cv/regular
+mkdir -p sorted/test/palsy
+mkdir -p sorted/test/regular
 
 
-totalFiles=$(ls -1 Sorted/palsy | wc -l)
+totalFiles=$(ls -1 sorted/palsy | wc -l)
 train=$((totalFiles * 3 / 5))
 test=$((totalFiles * 1 / 5))
 cv=$((totalFiles * 1 / 5))
 
-for file in $(ls -p Sorted/palsy | grep -v / | tail -$train)
+for file in $(ls -p sorted/palsy | grep -v / | tail -$train)
 do
-mv Sorted/palsy/$file Sorted/train/palsy/
+mv sorted/palsy/$file sorted/train/palsy/
 done
 
-for file in $(ls -p Sorted/palsy | grep -v / | tail -$test)
+for file in $(ls -p sorted/palsy | grep -v / | tail -$test)
 do
-mv Sorted/palsy/$file Sorted/test/palsy/
+mv sorted/palsy/$file sorted/test/palsy/
 done
 
-for file in $(ls -p Sorted/palsy | grep -v / | tail -$cv)
+for file in $(ls -p sorted/palsy | grep -v / | tail -$cv)
 do
-mv Sorted/palsy/$file Sorted/cv/palsy/
+mv sorted/palsy/$file sorted/cv/palsy/
 done
 
-totalFiles=$(ls -1 Sorted/regular | wc -l)
+totalFiles=$(ls -1 sorted/regular | wc -l)
 train=$((totalFiles * 3 / 5))
 test=$((totalFiles * 1 / 5))
 cv=$((totalFiles * 1 / 5))
 
-for file in $(ls -p Sorted/regular | grep -v / | tail -$train)
+for file in $(ls -p sorted/regular | grep -v / | tail -$train)
 do
-mv Sorted/regular/$file Sorted/train/regular/
+mv sorted/regular/$file sorted/train/regular/
 done
 
-for file in $(ls -p Sorted/regular | grep -v / | tail -$test)
+for file in $(ls -p sorted/regular | grep -v / | tail -$test)
 do
-mv Sorted/regular/$file Sorted/test/regular/
+mv sorted/regular/$file sorted/test/regular/
 done
 
-for file in $(ls -p Sorted/regular | grep -v / | tail -$cv)
+for file in $(ls -p sorted/regular | grep -v / | tail -$cv)
 do
-mv Sorted/regular/$file Sorted/cv/regular/
+mv sorted/regular/$file sorted/cv/regular/
 done
 
-rm -rf Sorted/regular
-rm -rf Sorted/palsy
+rm -rf sorted/regular
+rm -rf sorted/palsy
