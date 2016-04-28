@@ -66,6 +66,7 @@ Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifie
     image.convertTo(viz,CV_8U,1.0/255.0);     // move to proper[0..255] range to show it
     imshow("k",kernel);
     imshow("d",viz);
+
     //waitKey();
     //  Resize to 200x200 size
     cv::resize(image, image, Size(PARAM_WIDTH, PARAM_HEIGHT));
@@ -90,7 +91,7 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
         getline(liness, classlabel);
         int type = (atoi(classlabel.c_str()) == 0); // reverse it since our csv is wrong
         if(type == 0){
-            if(neg > 100){
+            if(neg > 200){
                 continue;
             } else {
                 neg++;
@@ -204,7 +205,7 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
         vector<Mat> cv_images, vector<int> cv_labels){
     //  Optimize for the PARAM_GAUSS parameter
     double best_accuracy = 0;
-    float best_theta = 1;
+    /*float best_theta = 1;
     for(float p_theta = 0; p_theta < M_PI - M_PI/10; p_theta+=M_PI/16){
         Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
         PARAM_THETA = p_theta;
@@ -259,8 +260,8 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
         }
     }
     cout << "Done optimizing. Best p_sigma value is " << param_sigma << endl;
-    PARAM_SIGMA = param_sigma;
-    float best_gamma = 1;
+    PARAM_SIGMA = param_sigma;*/
+    /*float best_gamma = 1;
     for(float p_gamma = .9; p_gamma < 2; p_gamma+=.1){
         Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
         PARAM_GAMMA = p_gamma;
@@ -287,7 +288,7 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
         }
     }
     cout << "Done optimizing. Best p_gamma value is " << best_gamma << endl;
-    PARAM_GAMMA = best_gamma;
+    PARAM_GAMMA = best_gamma;*/
     /*int best_p_gauss = 1;
     for(int p_gauss = 1; p_gauss < 50; p_gauss+=2){
         Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
@@ -443,6 +444,7 @@ int main(int argc, const char *argv[]) {
         // Show the image & apply a Jet colormap for better sensing.
         Mat cgrayscale;
         applyColorMap(grayscale, cgrayscale, COLORMAP_BONE);
+        cv::resize(cgrayscale, cgrayscale, Size(500, 500));
         imshow(format("eigenface_%d", i), cgrayscale);
         waitKey();
     }
