@@ -25,7 +25,7 @@ double PARAM_SIGMA= 1.5; // 1.2
 double PARAM_THETA= 1.76715; // 1.2
 
 Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifier mouthClassifier){
-    Mat image=orig.clone(); 
+    Mat image=orig.clone();
     //  Find the mouth
     vector< Rect_<int> > mouths;
     mouthClassifier.detectMultiScale(image, mouths);
@@ -43,7 +43,7 @@ Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifie
     //  Grayscale
     cvtColor(image, image, CV_BGR2GRAY);
     //  Apply gaussian blur
-    //GaussianBlur(image, image, Size(PARAM_GAUSS_X,PARAM_GAUSS_Y), 0, 0, BORDER_DEFAULT);    
+    //GaussianBlur(image, image, Size(PARAM_GAUSS_X,PARAM_GAUSS_Y), 0, 0, BORDER_DEFAULT);
     /// Apply Histogram Equalization
     //equalizeHist(image, image);
     /// Sobel edge detection
@@ -169,7 +169,7 @@ double verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vecto
     cout << "   True neg:" << trueNegative << endl;
     cout << "   False pos:" << falsePositive << endl;
     cout << "   False neg:" << falseNegative << endl;
-    
+
     double accuracy = (100 * (truePositive + trueNegative)) / test_labels.size();
     double TPR = (100 * (truePositive / (truePositive + falseNegative))); // Recall
     if(truePositive + falseNegative == 0){
@@ -198,8 +198,8 @@ double verifyAccuracy(BasicFaceRecognizer* model, vector<Mat> test_images, vecto
     return f1Score;
 }
 
-Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier, 
-        CascadeClassifier mouthClassifier, 
+Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
+        CascadeClassifier mouthClassifier,
         vector<Mat> training_images, vector<int> training_labels,
         vector<Mat> cv_images, vector<int> cv_labels){
     //  Optimize for the PARAM_GAUSS parameter
@@ -221,7 +221,7 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
             //  Preprocess the cross validation image using the parameters
             temp_cv_images.push_back(preProcessImage(cv_images.at(i), faceClassifier, mouthClassifier));
             temp_cv_labels.push_back(cv_labels.at(i));
-        }    
+        }
         model->train(temp_processed_images, temp_processed_labels);
         double accuracy = verifyAccuracy(model, temp_cv_images, temp_cv_labels);
         if(accuracy > best_accuracy){
@@ -249,7 +249,7 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
             //  Preprocess the cross validation image using the parameters
             temp_cv_images.push_back(preProcessImage(cv_images.at(i), faceClassifier, mouthClassifier));
             temp_cv_labels.push_back(cv_labels.at(i));
-        }    
+        }
         model->train(temp_processed_images, temp_processed_labels);
         double accuracy = verifyAccuracy(model, temp_cv_images, temp_cv_labels);
         if(accuracy > best_accuracy){
@@ -277,7 +277,7 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
             //  Preprocess the cross validation image using the parameters
             temp_cv_images.push_back(preProcessImage(cv_images.at(i), faceClassifier, mouthClassifier));
             temp_cv_labels.push_back(cv_labels.at(i));
-        }    
+        }
         model->train(temp_processed_images, temp_processed_labels);
         double accuracy = verifyAccuracy(model, temp_cv_images, temp_cv_labels);
         if(accuracy > best_accuracy){
@@ -306,7 +306,7 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
             //  Preprocess the cross validation image using the parameters
             temp_cv_images.push_back(preProcessImage(cv_images.at(i), mouthClassifier));
             temp_cv_labels.push_back(cv_labels.at(i));
-        }    
+        }
         model->train(temp_processed_images, temp_processed_labels);
         double accuracy = verifyAccuracy(model, temp_cv_images, temp_cv_labels);
         if(accuracy > best_accuracy){
@@ -336,7 +336,7 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
             //  Preprocess the cross validation image using the parameters
             temp_cv_images.push_back(preProcessImage(cv_images.at(i), mouthClassifier));
             temp_cv_labels.push_back(cv_labels.at(i));
-        }    
+        }
         model->train(temp_processed_images, temp_processed_labels);
         double accuracy = verifyAccuracy(model, temp_cv_images, temp_cv_labels);
         if(accuracy > best_accuracy){
@@ -353,7 +353,7 @@ Ptr<BasicFaceRecognizer> findBestModel(CascadeClassifier faceClassifier,
         //  Preprocess the image using the parameters
         cout << ((100 * i) / training_images.size()) << "% done. Image #" << i << endl;
         training_images[i] = preProcessImage(training_images.at(i), faceClassifier, mouthClassifier);
-    }    
+    }
     cout << "Starting training." << endl;
     model->train(training_images, training_labels);
     //model->load("fisher.yml");
@@ -413,11 +413,11 @@ int main(int argc, const char *argv[]) {
     for(int i = 0; i < test_images.size(); i++){
         //  Preprocess the image using the parameters
         test_images[i] = preProcessImage(test_images.at(i), haar_cascade, mouthClassifier);
-    }  
+    }
     double accuracy = verifyAccuracy(model, test_images, test_labels);
     cout << "F1-Score of model is: " << accuracy <<
     "%" << endl;
-    
+
     // Here is how to get the eigenvalues of this Eigenfaces model:
     Mat eigenvalues = model->getEigenValues();
     // And we can do the same to display the Eigenvectors (read Eigenfaces):
@@ -446,7 +446,7 @@ int main(int argc, const char *argv[]) {
         imshow(format("eigenface_%d", i), cgrayscale);
         waitKey();
     }
-    
+
     /*// Get a handle to the Video device:
     VideoCapture cap(deviceId);
     // Check if we can use this device at all:
