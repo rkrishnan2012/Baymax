@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		71D6AEF91CD47A1500B3FD36 /* SVMStrokeClassifier.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71D6AEF11CD47A1500B3FD36 /* SVMStrokeClassifier.cpp */; };
-		71D6AEFA1CD47A1500B3FD36 /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 71D6AEF21CD47A1500B3FD36 /* Makefile */; };
-		71D6AEFC1CD47A1500B3FD36 /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = 71D6AEF61CD47A1500B3FD36 /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -138,9 +136,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				71D6AEFA1CD47A1500B3FD36 /* Makefile in Sources */,
 				71D6AEF91CD47A1500B3FD36 /* SVMStrokeClassifier.cpp in Sources */,
-				71D6AEFC1CD47A1500B3FD36 /* README.md in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

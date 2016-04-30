@@ -19,13 +19,13 @@ using namespace cv;
 using namespace cv::face;
 using namespace std;
 
-const int PARAM_WIDTH = 20;
-const int PARAM_HEIGHT = 20;
+const int PARAM_WIDTH = 50;
+const int PARAM_HEIGHT = 50;
 
 Mat preProcessImage(Mat& image, CascadeClassifier faceClassifier, CascadeClassifier mouthClassifier) {
     cvtColor(image, image, CV_RGB2GRAY);
     resize(image, image, Size(PARAM_WIDTH, PARAM_HEIGHT));
-    //image.convertTo(image, CV_32S);
+    image.convertTo(image, CV_32F);
     return image;
 }
 
@@ -47,13 +47,14 @@ static void read_csv(const string &filename, vector<Mat> &images, vector<int> &l
         getline(liness, classlabel);
         int type = (atoi(classlabel.c_str()) == 0); // reverse it since our csv is wrong
         if (type == 0) {
-            if (neg > 50) {
+            if (neg > 700) {
                 continue;
             } else {
                 neg++;
             }
+            neg++;
         } else {
-            if (pos > 50) {
+            if (pos > 2000) {
                 continue;
             } else {
                 pos++;
@@ -79,9 +80,9 @@ void preProcessImages(vector<Mat> &training_images, CascadeClassifier faceClassi
     }
 }
 
-void generateSingleMatrix(vector<Mat>& training_images, Mat& training_mat){
+void generateSingleMatrix(const vector<Mat>& training_images, Mat& training_mat){
     for(int k = 0; k < training_images.size(); k++){
-        Mat& orig = training_images[k];
+        Mat orig = training_images[k];
         int ii = 0;
         for (int i = 0; i < orig.rows; i++) {
             for (int j = 0; j < orig.cols; j++) {
@@ -92,14 +93,59 @@ void generateSingleMatrix(vector<Mat>& training_images, Mat& training_mat){
     }
 }
 
-void predictAll(Ptr<ml::SVM>& svm, Mat& test_mat, vector<int>& test_labels){
-    int correct = 0;
+double predictAll(Ptr<ml::SVM>& svm, Mat& test_mat, vector<int>& test_labels){
+    double truePositive = 0;  // Correctly found 1
+    double trueNegative = 0;  // Correctly found 0
+    double falsePositive = 0; // Predicted 1 but actual 0
+    double falseNegative = 0; // Predicted 0 but actual 1
+    
     for(int i = 0; i < test_mat.rows; i++){
-        if(svm->predict(test_mat.row(i)) == test_labels[i]){
-            correct++;
+        int actual = test_labels[i];
+        int prediction = svm->predict(test_mat.row(i));
+        if(prediction == actual && prediction == 1){
+            truePositive++;
+        } else if(prediction == actual && prediction == 0){
+            trueNegative++;
+        } else {
+            if(prediction == 1 && actual == 0){
+                falsePositive++;
+            } else if(prediction == 0 && actual == 1){
+                falseNegative++;
+            }
         }
     }
-    cout << "Accuracy is " << (100 * correct) / test_mat.rows << endl;
+
+    cout << "   True pos:" << truePositive << endl;
+    cout << "   True neg:" << trueNegative << endl;
+    cout << "   False pos:" << falsePositive << endl;
+    cout << "   False neg:" << falseNegative << endl;
+    
+    double accuracy = (100 * (truePositive + trueNegative)) / test_labels.size();
+    double TPR = (100 * (truePositive / (truePositive + falseNegative))); // Recall
+    if(truePositive + falseNegative == 0){
+        TPR = 0;
+    }
+    //double FNR = (100 * (falseNegative / (truePositive + falseNegative)));
+    //double FPR = (100 * (falsePositive / (falsePositive + trueNegative)));
+    //double TNR = (100 * (trueNegative / (falsePositive + trueNegative)));
+    double PPV = (100 * (truePositive / (truePositive + falsePositive))); // Precision
+    if(truePositive + falsePositive == 0){
+        PPV = 0;
+    }
+    
+    cout << "   Precision:" << PPV << "%" << endl;
+    cout << "   Recall:" << TPR << "%" << endl;
+    
+    //double FDR = (100 * (falsePositive / (truePositive + falsePositive)));
+    //double FOR = (100 * (falseNegative / (falseNegative + trueNegative)));
+    //double NPV = (100 * (trueNegative / (falseNegative + trueNegative)));
+    double f1Score = (2 * (PPV * TPR)) / (PPV + TPR);
+    if(PPV + TPR == 0){
+        f1Score = 0;
+    }
+    cout << "   Accuracy of model is: " << accuracy <<
+    "%" << endl;
+    return f1Score;
 }
 
 int main(int argc, char **argv) {
@@ -153,11 +199,12 @@ int main(int argc, char **argv) {
     }
 
     preProcessImages(training_images, faceClassifier, mouthClassifier);
-
-    Mat labels((int)training_images.size(),1,CV_32S, (int*)training_labels.data());
-    Mat training_mat((int)training_images.size(),PARAM_WIDTH * PARAM_HEIGHT, CV_32F, double(0));
+    preProcessImages(test_images, faceClassifier, mouthClassifier);
     
+    Mat training_mat((int)training_images.size(),PARAM_WIDTH * PARAM_HEIGHT, CV_32F, double(0));
     Mat test_mat((int)test_images.size(),PARAM_WIDTH * PARAM_HEIGHT, CV_32F, double(0));
+    
+    Mat labels((int)training_images.size(),1,CV_32S, (int*)training_labels.data());
     
     generateSingleMatrix(training_images, training_mat);
     generateSingleMatrix(test_images, test_mat);
@@ -169,7 +216,8 @@ int main(int argc, char **argv) {
     svm->train(training_mat, ml::ROW_SAMPLE, labels);
 
     cout << "Predicting" << endl;
-    predictAll(svm, test_mat, test_labels);
+    double fscore = predictAll(svm, test_mat, test_labels);
+    cout << "F-score is: " << fscore << endl;
     cout << "Done!" << endl;
     
     return 0;
