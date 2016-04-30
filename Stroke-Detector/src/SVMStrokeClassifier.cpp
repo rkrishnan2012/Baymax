@@ -19,13 +19,20 @@ using namespace cv;
 using namespace cv::face;
 using namespace std;
 
-const int PARAM_WIDTH = 50;
-const int PARAM_HEIGHT = 50;
+const int PARAM_WIDTH = 100;
+const int PARAM_HEIGHT = 100;
+double PARAM_GAMMA= 1; // 1.2
+double PARAM_SIGMA= 1; // 1.2
+double PARAM_THETA= 1.37445; // 1.2
 
 Mat preProcessImage(Mat& image, CascadeClassifier faceClassifier, CascadeClassifier mouthClassifier) {
     cvtColor(image, image, CV_RGB2GRAY);
     resize(image, image, Size(PARAM_WIDTH, PARAM_HEIGHT));
-    image.convertTo(image, CV_32F);
+    image.convertTo(image,CV_32F);
+    int kernel_size = 10;
+    double sig = PARAM_SIGMA, th = PARAM_THETA, lm = 1.0, gm = PARAM_GAMMA, ps = 0;
+    cv::Mat kernel = cv::getGaborKernel(cv::Size(kernel_size,kernel_size), sig, th, lm, gm, ps);
+    cv::filter2D(image, image, CV_32F, kernel);
     return image;
 }
 
@@ -54,11 +61,8 @@ static void read_csv(const string &filename, vector<Mat> &images, vector<int> &l
             }
             neg++;
         } else {
-            if (pos > 2000) {
-                continue;
-            } else {
-                pos++;
-            }
+            //  There are only about 256 palsy images
+            pos++;
         }
         if (!path.empty() && !classlabel.empty()) {
             Mat image;
@@ -72,6 +76,8 @@ static void read_csv(const string &filename, vector<Mat> &images, vector<int> &l
             labels.push_back(type);
         }
     }
+    cout << neg << " Regular faces." << endl;
+    cout << pos << " Palsy faces." << endl;
 }
 
 void preProcessImages(vector<Mat> &training_images, CascadeClassifier faceClassifier, CascadeClassifier mouthClassifier){
@@ -189,15 +195,22 @@ int main(int argc, char **argv) {
     vector<int> test_labels;
 
     try {
+        cout << "======TRAINING SET======" << endl;
         read_csv(fn_training, training_images, training_labels);
+        cout << training_images.size() << " training images." << endl;
+        cout << "======CV SET======" << endl;
         read_csv(fn_cv, cv_images, cv_labels);
+        cout << cv_images.size() << " cv images." << endl;
+        cout << "======TEST SET======" << endl;
         read_csv(fn_test, test_images, test_labels);
+        cout << test_images.size() << " test images." << endl;
     } catch (cv::Exception &e) {
         cerr << "Error opening csv file . Reason: " << e.msg << endl;
         // nothing more we can do
         exit(1);
     }
 
+    
     preProcessImages(training_images, faceClassifier, mouthClassifier);
     preProcessImages(test_images, faceClassifier, mouthClassifier);
     
@@ -212,13 +225,11 @@ int main(int argc, char **argv) {
     Ptr<ml::SVM> svm = ml::SVM::create();
     svm->setType(ml::SVM::C_SVC);
     svm->setKernel(ml::SVM::LINEAR);
-    svm->setGamma(3);
     svm->train(training_mat, ml::ROW_SAMPLE, labels);
-
+    cout << endl << endl;
     cout << "Predicting" << endl;
     double fscore = predictAll(svm, test_mat, test_labels);
     cout << "F-score is: " << fscore << endl;
-    cout << "Done!" << endl;
     
     return 0;
 }
