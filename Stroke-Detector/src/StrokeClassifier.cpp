@@ -21,11 +21,12 @@ double PARAM_SOBEL_DELTA = 3;
 double PARAM_WIDTH = 50;
 double PARAM_HEIGHT= 50;
 double PARAM_GAMMA= 1; // 1.2
-double PARAM_SIGMA= 1.5; // 1.2
-double PARAM_THETA= 1.76715; // 1.2
+double PARAM_SIGMA= 1; // 1.2
+double PARAM_THETA= 1.37445; // 1.2
 
 Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifier mouthClassifier){
     Mat image=orig.clone();
+    
     //  Find the mouth
     vector< Rect_<int> > mouths;
     mouthClassifier.detectMultiScale(image, mouths);
@@ -42,6 +43,9 @@ Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifie
     //cv::resize(image, image, Size(PARAM_WIDTH, PARAM_HEIGHT));
     //  Grayscale
     cvtColor(image, image, CV_BGR2GRAY);
+
+    imshow("Grayscale",image);
+    //waitKey();
     //  Apply gaussian blur
     //GaussianBlur(image, image, Size(PARAM_GAUSS_X,PARAM_GAUSS_Y), 0, 0, BORDER_DEFAULT);
     /// Apply Histogram Equalization
@@ -63,11 +67,12 @@ Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifie
     cv::Mat kernel = cv::getGaborKernel(cv::Size(kernel_size,kernel_size), sig, th, lm, gm, ps);
     cv::filter2D(image, image, CV_32F, kernel);
     Mat viz;
-    image.convertTo(viz,CV_8U,1.0/255.0);     // move to proper[0..255] range to show it
+    image.convertTo(viz,CV_8U,20.0/255.0);     // move to proper[0..255] range to show it
     imshow("k",kernel);
-    imshow("d",viz);
-
+    applyColorMap(viz, viz, COLORMAP_BONE);
+    imshow("gabor",viz);
     //waitKey();
+    
     //  Resize to 200x200 size
     cv::resize(image, image, Size(PARAM_WIDTH, PARAM_HEIGHT));
     return image;
