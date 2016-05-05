@@ -1,4 +1,8 @@
 # Project Baymax Stroke-Detector
+<p align="center">
+ <b>Final paper can be downloaded <a href="https://github.com/rkrishnan2012/Baymax/raw/master/Final-Paper/paper_Final.pdf">here</a></b>
+</p>
+
 Baymax is an autonomous drone equipped with a camera to detect if a person is suffering a stroke. 
 
 This project uses FisherFaces in OpenCV to determine whether a given face is normal or has Bell's Facial Palsy.
@@ -8,8 +12,12 @@ This project uses FisherFaces in OpenCV to determine whether a given face is nor
 </p>
 
 ### Project Structure
+Final Paper - The report which outlines the algorithm we use to detect the stroke (Fisher Linear Discriminant Analysis)
+
 Drone - The Arduino code to be run on the drone
+
 PhoneApp - Android code to run on the phone connected to the drone
+
 Stroke-Detector -The face recognition and stroke detection algorithm
     
 ### Version
@@ -89,6 +97,10 @@ $ cd ~/baymax-face-recognizer/src
 $ g++ `pkg-config --cflags opencv` -o facerec_video facerec_video.cpp `pkg-config --libs opencv` -L/Users/rkrishnan/opencv/3rdparty/ippicv/unpack/ippicv_osx/lib/  
 ```
 
+Run it (Training the set will take forever, so grab some coffee.):
+```sh
+$ ./facerec_video haarcascade_frontalface_default.xml ../data/filepath.txt 0
+```
 
 ### Errors
 Here are some errors you run into sometimes if you are running on mac:
@@ -108,3 +120,4 @@ $ ln -s /System/Library/Frameworks/ImageIO.framework/Resources/libPng.dylib libP
 License
 ----
 MIT
+
