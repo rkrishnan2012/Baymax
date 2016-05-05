@@ -89,10 +89,6 @@ $ cd ~/baymax-face-recognizer/src
 $ g++ `pkg-config --cflags opencv` -o facerec_video facerec_video.cpp `pkg-config --libs opencv` -L/Users/rkrishnan/opencv/3rdparty/ippicv/unpack/ippicv_osx/lib/  
 ```
 
-Run it (Training the set will take forever, so grab some coffee.):
-```sh
-$ ./facerec_video haarcascade_frontalface_default.xml ../data/filepath.txt 0
-```
 
 ### Errors
 Here are some errors you run into sometimes if you are running on mac:
