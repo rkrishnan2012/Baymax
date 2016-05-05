@@ -1,0 +1,15 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Mechanical Apparatus}{}% 2
+\BOOKMARK [1][-]{section.3}{Machine Learning Overview}{}% 3
+\BOOKMARK [2][-]{subsection.3.1}{The Basics}{section.3}% 4
+\BOOKMARK [2][-]{subsection.3.2}{Linear Discriminant Analysis}{section.3}% 5
+\BOOKMARK [2][-]{subsection.3.3}{Principal Component Analysis}{section.3}% 6
+\BOOKMARK [2][-]{subsection.3.4}{Fisher Discriminant Analysis}{section.3}% 7
+\BOOKMARK [1][-]{section.4}{Implementation details}{}% 8
+\BOOKMARK [2][-]{subsection.4.1}{Training Matrix}{section.4}% 9
+\BOOKMARK [1][-]{section.5}{Image Pre-Processing}{}% 10
+\BOOKMARK [1][-]{section.6}{Evaluation}{}% 11
+\BOOKMARK [2][-]{subsection.6.1}{Measuring Performance}{section.6}% 12
+\BOOKMARK [2][-]{subsection.6.2}{Optimizing with Cross-Validation set}{section.6}% 13
+\BOOKMARK [1][-]{section.7}{Conclusion and future work}{}% 14
+\BOOKMARK [1][-]{section.8}{Roles and Responsibilities}{}% 15

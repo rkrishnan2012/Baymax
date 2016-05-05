@@ -1,0 +1,73 @@
+This is BibTeX, Version 0.99d (TeX Live 2015)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: /Users/rkrishnan/Documents/School/Baymax/RSS Template/.texpadtmp/paper_Final.aux
+The style file: IEEEtran.bst
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: ../bibliography/bibliographyRSS.bib.bib
+I was expecting a `,' or a `}'---line 37 of file ../bibliography/bibliographyRSS.bib.bib
+ :   
+ :   year =         "2011",
+(Error may have been on previous line)
+I'm skipping whatever remains of this entry
+-- IEEEtran.bst version 1.13 (2008/09/30) by Michael Shell.
+-- http://www.michaelshell.org/tex/ieeetran/bibtex/
+-- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
+Warning--empty author in 7
+Warning--empty journal in 7
+Warning--empty year in 7
+Warning--empty journal in 8
+Warning--empty author in 9
+Warning--empty journal in 9
+Warning--empty journal in 10
+Warning--empty author in 6
+Warning--empty journal in 6
+Warning--empty journal in 11
+Warning--empty journal in 4
+
+Done.
+You've used 10 entries,
+            4039 wiz_defined-function locations,
+            846 strings with 8777 characters,
+and the built_in function-call counts, 3711 in all, are:
+= -- 286
+> -- 58
+< -- 1
++ -- 29
+- -- 13
+* -- 193
+:= -- 726
+add.period$ -- 20
+call.type$ -- 10
+change.case$ -- 10
+chr.to.int$ -- 0
+cite$ -- 21
+duplicate$ -- 325
+empty$ -- 332
+format.name$ -- 16
+if$ -- 756
+int.to.chr$ -- 0
+int.to.str$ -- 10
+missing$ -- 54
+newline$ -- 67
+num.names$ -- 7
+pop$ -- 161
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 2
+skip$ -- 280
+stack$ -- 0
+substring$ -- 14
+swap$ -- 159
+text.length$ -- 1
+text.prefix$ -- 0
+top$ -- 5
+type$ -- 10
+warning$ -- 11
+while$ -- 8
+width$ -- 12
+write$ -- 113
+(There was 1 error message)

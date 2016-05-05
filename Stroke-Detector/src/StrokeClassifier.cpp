@@ -26,41 +26,9 @@ double PARAM_THETA= 1.37445; // 1.2
 
 Mat preProcessImage(Mat orig, CascadeClassifier faceClassifier, CascadeClassifier mouthClassifier){
     Mat image=orig.clone();
-    
-    //  Find the mouth
-    vector< Rect_<int> > mouths;
-    mouthClassifier.detectMultiScale(image, mouths);
-    if(mouths.size() == 0){
-        //cerr << "There isn't a mouth in a picture." << endl;
-        //imshow("full", image);
-        //waitKey();
-    }
-    // Rect mouthRect = mouths[0];
-    //  Crop the pic to the mouth
-    cv::Rect myROI(0, image.size().height / 2, image.size().width, image.size().height  / 2);
-    //image = image(myROI);
-    //  Resize it to 200x200
-    //cv::resize(image, image, Size(PARAM_WIDTH, PARAM_HEIGHT));
-    //  Grayscale
+  
     cvtColor(image, image, CV_BGR2GRAY);
 
-    imshow("Grayscale",image);
-    //waitKey();
-    //  Apply gaussian blur
-    //GaussianBlur(image, image, Size(PARAM_GAUSS_X,PARAM_GAUSS_Y), 0, 0, BORDER_DEFAULT);
-    /// Apply Histogram Equalization
-    //equalizeHist(image, image);
-    /// Sobel edge detection
-    Mat edges, grad_x, grad_y;
-    Mat abs_grad_x, abs_grad_y;
-    int scale = PARAM_SOBEL_SCALE;
-    int delta = PARAM_SOBEL_DELTA;
-    int ddepth = CV_16S;
-    Sobel( image, grad_x, ddepth, 1, 0, 3, scale, delta, BORDER_DEFAULT );
-    convertScaleAbs( grad_x, abs_grad_x );
-    Sobel( image, grad_y, ddepth, 0, 1, 3, scale, delta, BORDER_DEFAULT );
-    convertScaleAbs( grad_y, abs_grad_y );
-    //addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, image );
     image.convertTo(image,CV_32F);
     int kernel_size = 10;
     double sig = PARAM_SIGMA, th = PARAM_THETA, lm = 1.0, gm = PARAM_GAMMA, ps = 0;
@@ -454,69 +422,5 @@ int main(int argc, const char *argv[]) {
         waitKey();
     }
 
-    /*// Get a handle to the Video device:
-    VideoCapture cap(deviceId);
-    // Check if we can use this device at all:
-    if(!cap.isOpened()) {
-        cerr << "Capture Device ID " << deviceId << "cannot be opened." << endl;
-        return -1;
-    } else {
-        cout << "Opened capture device ID " << deviceId << "." << endl;
-    }
-    // Holds the current frame from the Video device:
-    Mat frame;
-    for(;;) {
-        cap >> frame;
-        // Clone the current frame:
-        Mat original = frame.clone();
-        // // Convert the current frame to grayscale:
-        Mat gray;
-        cvtColor(original, gray, CV_BGR2GRAY);
-        // Find the faces in the frame:
-        vector< Rect_<int> > faces;
-        haar_cascade.detectMultiScale(original, faces);
-
-        // At this point you have the position of the faces in
-        // faces. Now we'll get the faces, make a prediction and
-        // annotate it in the video. Cool or what?
-        for(int i = 0; i < faces.size(); i++) {
-            // Process face by face:
-            Rect face_i = faces[i];
-            // Crop the face from the image. So simple with OpenCV C++:
-            Mat face = gray(face_i);
-            // Resizing the face is necessary for Eigenfaces and Fisherfaces. You can easily
-            // verify this, by reading through the face recognition tutorial coming with OpenCV.
-            // Resizing IS NOT NEEDED for Local Binary Patterns Histograms, so preparing the
-            // input data really depends on the algorithm used.
-            //
-            // I strongly encourage you to play around with the algorithms. See which work best
-            // in your scenario, LBPH should always be a contender for robust face recognition.
-            //
-            // Since I am showing the Fisherfaces algorithm here, I also show how to resize the
-            // face you have just found:
-            Mat face_resized;
-            cv::resize(face, face_resized, Size(im_width, im_height));
-            // Now perform the prediction, see how easy that is:
-            int prediction = model->predict(face_resized);
-            // And finally write all we've found out to the original image!
-            // First of all draw a green rectangle around the detected face:
-            rectangle(original, face_i, CV_RGB(0, 255,0), 1);
-            // Create the text we will annotate the box with:
-            string box_text = format("Prediction = %d", prediction);
-            // Calculate the position for annotated text (make sure we don't
-            // put illegal values in there):
-            int pos_x = std::max(face_i.tl().x - 10, 0);
-            int pos_y = std::max(face_i.tl().y - 10, 0);
-            // And now put it into the image:
-            putText(original, box_text, Point(pos_x, pos_y), FONT_HERSHEY_PLAIN, 1.0, CV_RGB(0,255,0), 2.0);
-        }
-        // Show the result:
-        imshow("face_recognizer", original);
-        // And display it:
-        char key = (char) waitKey(20);
-        // Exit this loop on escape:
-        if(key == 27)
-            break;
-    }*/
     return 0;
 }

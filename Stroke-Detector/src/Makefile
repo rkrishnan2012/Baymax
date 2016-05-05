@@ -20,8 +20,8 @@ run: clean SVMStrokeClassifier StrokeClassifier
 	#python ../data/filtered-images/create_csv.py ../data/filtered-images/train > ../data/filtered-images/train/train.txt
 	#python ../data/filtered-images/create_csv.py ../data/filtered-images/test > ../data/filtered-images/test/test.txt
 	#python ../data/filtered-images/create_csv.py ../data/filtered-images/cv > ../data/filtered-images/cv/cv.txt
-	#./StrokeClassifier ../data/classifiers/face.xml ../data/classifiers/nose.xml ../data/filtered-images/train/train.txt ../data/filtered-images/cv/cv.txt ../data/filtered-images/test/test.txt 0
-	./SVMStrokeClassifier ../data/classifiers/face.xml ../data/classifiers/nose.xml ../data/filtered-images/train/train.txt ../data/filtered-images/cv/cv.txt ../data/filtered-images/test/test.txt
+	./StrokeClassifier ../data/classifiers/face.xml ../data/classifiers/nose.xml ../data/filtered-images/train/train.txt ../data/filtered-images/cv/cv.txt ../data/filtered-images/test/test.txt 0
+	#./SVMStrokeClassifier ../data/classifiers/face.xml ../data/classifiers/nose.xml ../data/filtered-images/train/train.txt ../data/filtered-images/cv/cv.txt ../data/filtered-images/test/test.txt
 
 clean :	
 	rm -f *.o
